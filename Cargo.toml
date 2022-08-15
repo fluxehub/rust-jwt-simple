@@ -30,7 +30,7 @@ serde = { version = "1.0.137", features = ["derive"] }
 serde_json = "1.0.82"
 spki05 = { package = "spki", version = "0.5.4" }                           # Use an old version, required by the rsa crate, but that crate doesn't reexport it
 thiserror = "1.0.31"
-zeroize = "1.5.6"
+zeroize = "1.4"
 
 [dev-dependencies]
 benchmark-simple = "0.1.7"
