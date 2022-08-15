@@ -198,7 +198,7 @@ fn should_verify_token() {
 
     let issuer = "issuer";
     let audience = "recipient";
-    let mut claims = Claims::create(Duration::from_mins(10))
+    let mut claims = Claims::create(Duration::minutes(10))
         .with_issuer(issuer)
         .with_audience(audience);
     let nonce = claims.create_nonce();
@@ -226,7 +226,7 @@ fn multiple_audiences() {
     audiences.insert("audience 1");
     audiences.insert("audience 2");
     audiences.insert("audience 3");
-    let claims = Claims::create(Duration::from_mins(10)).with_audiences(audiences);
+    let claims = Claims::create(Duration::minutes(10)).with_audiences(audiences);
     let token = key.authenticate(claims).unwrap();
 
     let options = VerificationOptions {
@@ -246,17 +246,17 @@ fn explicitly_empty_audiences() {
     let key = HS256Key::generate();
 
     let audiences: HashSet<&str> = HashSet::new();
-    let claims = Claims::create(Duration::from_mins(10)).with_audiences(audiences);
+    let claims = Claims::create(Duration::minutes(10)).with_audiences(audiences);
     let token = key.authenticate(claims).unwrap();
     let decoded = key.verify_token::<NoCustomClaims>(&token, None).unwrap();
     assert!(decoded.audiences.is_some());
 
-    let claims = Claims::create(Duration::from_mins(10)).with_audience("");
+    let claims = Claims::create(Duration::minutes(10)).with_audience("");
     let token = key.authenticate(claims).unwrap();
     let decoded = key.verify_token::<NoCustomClaims>(&token, None).unwrap();
     assert!(decoded.audiences.is_some());
 
-    let claims = Claims::create(Duration::from_mins(10));
+    let claims = Claims::create(Duration::minutes(10));
     let token = key.authenticate(claims).unwrap();
     let decoded = key.verify_token::<NoCustomClaims>(&token, None).unwrap();
     assert!(decoded.audiences.is_none());

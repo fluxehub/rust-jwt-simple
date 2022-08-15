@@ -80,7 +80,7 @@
 //! # fn main() -> Result<(), jwt_simple::Error> {
 //! # let key = HS256Key::generate();
 //! /// create claims valid for 2 hours
-//! let claims = Claims::create(Duration::from_hours(2));
+//! let claims = Claims::create(Duration::hours(2));
 //! let token = key.authenticate(claims)?;
 //! # Ok(()) }
 //! ```
@@ -93,7 +93,7 @@
 //! # use jwt_simple::prelude::*;
 //! # fn main() -> Result<(), jwt_simple::Error> {
 //! # let key = HS256Key::generate();
-//! # let token = key.authenticate(Claims::create(Duration::from_secs(10)))?;
+//! # let token = key.authenticate(Claims::create(Duration::seconds(10)))?;
 //! let claims = key.verify_token::<NoCustomClaims>(&token, None)?;
 //! # Ok(()) }
 //! ```
@@ -115,14 +115,14 @@
 //! # use jwt_simple::prelude::*;
 //! # fn main() -> Result<(), jwt_simple::Error> {
 //! # let key = HS256Key::generate();
-//! # let token = key.authenticate(Claims::create(Duration::from_secs(10)).with_issuer("example app"))?;
+//! # let token = key.authenticate(Claims::create(Duration::seconds(10)).with_issuer("example app"))?;
 //! let mut options = VerificationOptions::default();
 //! // Accept tokens that will only be valid in the future
 //! options.accept_future = true;
 //! // accept tokens even if they have expired up to 15 minutes after the deadline
-//! options.time_tolerance = Some(Duration::from_mins(15));
+//! options.time_tolerance = Some(Duration::minutes(15));
 //! // reject tokens if they were issued more than 1 hour ago
-//! options.max_validity = Some(Duration::from_hours(1));
+//! options.max_validity = Some(Duration::hours(1));
 //! // reject tokens if they don't include an issuer from that list
 //! options.allowed_issuers = Some(HashSet::from_strings(&["example app"]));
 //! // see the documentation for the full list of available options
@@ -191,7 +191,7 @@
 //! # fn main() -> Result<(), jwt_simple::Error> {
 //! # let key_pair = Ed25519KeyPair::generate();
 //! /// create claims valid for 2 hours
-//! let claims = Claims::create(Duration::from_hours(2));
+//! let claims = Claims::create(Duration::hours(2));
 //! let token = key_pair.sign(claims)?;
 //! # Ok(()) }
 //! ```
@@ -203,7 +203,7 @@
 //! # fn main() -> Result<(), jwt_simple::Error> {
 //! # let key_pair = Ed25519KeyPair::generate();
 //! # let public_key = key_pair.public_key();
-//! # let token = key_pair.sign(Claims::create(Duration::from_secs(10)))?;
+//! # let token = key_pair.sign(Claims::create(Duration::seconds(10)))?;
 //! let claims = public_key.verify_token::<NoCustomClaims>(&token, None)?;
 //! # Ok(()) }
 //! ```
@@ -220,7 +220,7 @@
 //!
 //! ```rust
 //! # use jwt_simple::prelude::*;
-//! let claims = Claims::create(Duration::from_hours(2))
+//! let claims = Claims::create(Duration::hours(2))
 //!     .with_issuer("Example issuer")
 //!     .with_subject("Example subject");
 //! ```
@@ -244,7 +244,7 @@
 //! // Claim creation with custom data:
 //!
 //! # use jwt_simple::prelude::*;
-//! let claims = Claims::with_custom_claims(my_additional_data, Duration::from_secs(30));
+//! let claims = Claims::with_custom_claims(my_additional_data, Duration::seconds(30));
 //!
 //! // Claim verification with custom data. Note the presence of the custom data type:
 //!
@@ -264,7 +264,7 @@
 //! ```rust
 //! # use jwt_simple::prelude::*;
 //! # fn main() -> Result<(), jwt_simple::Error> {
-//! # let token = Ed25519KeyPair::generate().sign(Claims::create(Duration::from_hours(2)))?;
+//! # let token = Ed25519KeyPair::generate().sign(Claims::create(Duration::hours(2)))?;
 //! let metadata = Token::decode_metadata(&token)?;
 //! let key_id = metadata.key_id();
 //! let algorithm = metadata.algorithm();
@@ -313,7 +313,7 @@ mod serde_additions;
 
 pub mod reexports {
     pub use anyhow;
-    pub use coarsetime;
+    pub use chrono;
     pub use ct_codecs;
     pub use rand;
     pub use serde;
@@ -328,7 +328,7 @@ pub use error::{Error, JWTError};
 pub mod prelude {
     pub use std::collections::HashSet;
 
-    pub use coarsetime::{self, Clock, Duration, UnixTimeStamp};
+    pub use chrono::{Utc, DateTime, Duration};
     pub use ct_codecs::{
         Base64, Base64NoPadding, Base64UrlSafe, Base64UrlSafeNoPadding, Decoder as _, Encoder as _,
     };
@@ -406,7 +406,7 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
     #[test]
     fn hs384() {
         let key = HS384Key::from_bytes(b"your-256-bit-secret").with_key_id("my-key-id");
-        let claims = Claims::create(Duration::from_secs(86400)).with_issuer("test issuer");
+        let claims = Claims::create(Duration::seconds(86400)).with_issuer("test issuer");
         let token = key.authenticate(claims).unwrap();
         let options = VerificationOptions {
             allowed_issuers: Some(HashSet::from_strings(&["test issuer"])),
@@ -420,7 +420,7 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
     #[test]
     fn rs256() {
         let key_pair = RS256KeyPair::from_pem(RSA_KP_PEM).unwrap();
-        let claims = Claims::create(Duration::from_secs(86400));
+        let claims = Claims::create(Duration::seconds(86400));
         let token = key_pair.sign(claims).unwrap();
         let pk = RS256PublicKey::from_pem(RSA_PK_PEM).unwrap();
         let _claims = pk.verify_token::<NoCustomClaims>(&token, None).unwrap();
@@ -432,7 +432,7 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
     #[test]
     fn ps384() {
         let key_pair = PS384KeyPair::generate(2048).unwrap();
-        let claims = Claims::create(Duration::from_secs(86400));
+        let claims = Claims::create(Duration::seconds(86400));
         let token = key_pair.sign(claims).unwrap();
         let _claims = key_pair
             .public_key()
@@ -443,7 +443,7 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
     #[test]
     fn es256() {
         let key_pair = ES256KeyPair::generate();
-        let claims = Claims::create(Duration::from_secs(86400));
+        let claims = Claims::create(Duration::seconds(86400));
         let token = key_pair.sign(claims).unwrap();
         let _claims = key_pair
             .public_key()
@@ -454,7 +454,7 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
     #[test]
     fn es384() {
         let key_pair = ES384KeyPair::generate();
-        let claims = Claims::create(Duration::from_secs(86400));
+        let claims = Claims::create(Duration::seconds(86400));
         let token = key_pair.sign(claims).unwrap();
         let _claims = key_pair
             .public_key()
@@ -465,7 +465,7 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
     #[test]
     fn es256k() {
         let key_pair = ES256kKeyPair::generate();
-        let claims = Claims::create(Duration::from_secs(86400));
+        let claims = Claims::create(Duration::seconds(86400));
         let token = key_pair.sign(claims).unwrap();
         let _claims = key_pair
             .public_key()
@@ -485,7 +485,7 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
         let key_id = pk.create_key_id();
         let key_pair = key_pair.with_key_id(key_id);
         let custom_claims = CustomClaims { is_custom: true };
-        let claims = Claims::with_custom_claims(custom_claims, Duration::from_secs(86400));
+        let claims = Claims::with_custom_claims(custom_claims, Duration::seconds(86400));
         let token = key_pair.sign(claims).unwrap();
         let options = VerificationOptions {
             required_key_id: Some(key_id.to_string()),
@@ -501,7 +501,7 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
     #[test]
     fn require_nonce() {
         let key = HS256Key::generate();
-        let mut claims = Claims::create(Duration::from_hours(1));
+        let mut claims = Claims::create(Duration::hours(1));
         let nonce = claims.create_nonce();
         let token = key.authenticate(claims).unwrap();
 
@@ -534,7 +534,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
             .unwrap();
         key_pair.attach_metadata(key_metadata).unwrap();
 
-        let claims = Claims::create(Duration::from_secs(86400));
+        let claims = Claims::create(Duration::seconds(86400));
         let token = key_pair.sign(claims).unwrap();
 
         let decoded_metadata = Token::decode_metadata(&token).unwrap();
@@ -552,7 +552,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
     #[test]
     fn expired_token() {
         let key = HS256Key::generate();
-        let claims = Claims::create(Duration::from_secs(1));
+        let claims = Claims::create(Duration::seconds(1));
         let token = key.authenticate(claims).unwrap();
         std::thread::sleep(std::time::Duration::from_secs(2));
         let options = VerificationOptions {

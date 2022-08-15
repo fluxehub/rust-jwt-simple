@@ -1,7 +1,8 @@
 use std::collections::HashSet;
 use std::convert::TryInto;
 
-use coarsetime::{Clock, Duration, UnixTimeStamp};
+use chrono::{Duration, Utc, DateTime};
+use std::ops::Add;
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
 use rand::RngCore;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -114,7 +115,7 @@ pub struct JWTClaims<CustomClaims> {
         skip_serializing_if = "Option::is_none",
         with = "self::serde_additions::unix_timestamp"
     )]
-    pub issued_at: Option<UnixTimeStamp>,
+    pub issued_at: Option<DateTime<Utc>>,
 
     /// Time the claims expire at
     #[serde(
@@ -123,7 +124,7 @@ pub struct JWTClaims<CustomClaims> {
         skip_serializing_if = "Option::is_none",
         with = "self::serde_additions::unix_timestamp"
     )]
-    pub expires_at: Option<UnixTimeStamp>,
+    pub expires_at: Option<DateTime<Utc>>,
 
     /// Time the claims will be invalid until
     #[serde(
@@ -132,7 +133,7 @@ pub struct JWTClaims<CustomClaims> {
         skip_serializing_if = "Option::is_none",
         with = "self::serde_additions::unix_timestamp"
     )]
-    pub invalid_before: Option<UnixTimeStamp>,
+    pub invalid_before: Option<DateTime<Utc>>,
 
     /// Issuer - This can be set to anything application-specific
     #[serde(rename = "iss", default, skip_serializing_if = "Option::is_none")]
@@ -173,8 +174,8 @@ pub struct JWTClaims<CustomClaims> {
 
 impl<CustomClaims> JWTClaims<CustomClaims> {
     pub(crate) fn validate(&self, options: &VerificationOptions) -> Result<(), Error> {
-        let now = Clock::now_since_epoch();
-        let time_tolerance = options.time_tolerance.unwrap_or_default();
+        let now = Utc::now();
+        let time_tolerance = options.time_tolerance.unwrap_or(Duration::seconds(0));
 
         if let Some(reject_before) = options.reject_before {
             ensure!(now <= reject_before, JWTError::OldTokenReused);
@@ -240,7 +241,7 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
     }
 
     /// Set the token as not being valid until `unix_timestamp`
-    pub fn invalid_before(mut self, unix_timestamp: UnixTimeStamp) -> Self {
+    pub fn invalid_before(mut self, unix_timestamp: DateTime<Utc>) -> Self {
         self.invalid_before = Some(unix_timestamp);
         self
     }
@@ -301,7 +302,7 @@ impl Claims {
     /// Create a new set of claims, without custom data, expiring in
     /// `valid_for`.
     pub fn create(valid_for: Duration) -> JWTClaims<NoCustomClaims> {
-        let now = Some(Clock::now_since_epoch());
+        let now = Some(Utc::now());
         JWTClaims {
             issued_at: now,
             expires_at: Some(now.unwrap() + valid_for),
@@ -320,7 +321,7 @@ impl Claims {
         custom_claims: CustomClaims,
         valid_for: Duration,
     ) -> JWTClaims<CustomClaims> {
-        let now = Some(Clock::now_since_epoch());
+        let now = Some(Utc::now());
         JWTClaims {
             issued_at: now,
             expires_at: Some(now.unwrap() + valid_for),
@@ -341,7 +342,7 @@ mod tests {
 
     #[test]
     fn should_set_standard_claims() {
-        let exp = Duration::from_mins(10);
+        let exp = Duration::minutes(10);
         let mut audiences = HashSet::new();
         audiences.insert("audience1".to_string());
         audiences.insert("audience2".to_string());
@@ -363,8 +364,8 @@ mod tests {
     fn parse_floating_point_unix_time() {
         let claims: JWTClaims<()> = serde_json::from_str(r#"{"exp":1617757825.8}"#).unwrap();
         assert_eq!(
-            claims.expires_at,
-            Some(UnixTimeStamp::from_secs(1617757825))
+            claims.expires_at.unwrap().timestamp(),
+            1617757825
         );
     }
 }
